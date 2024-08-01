@@ -1,0 +1,9 @@
+[submodule "include/spectra"]
+	path = include/spectra
+	url = https://github.com/yixuan/spectra
+[submodule "include/eigen"]
+	path = include/eigen
+	url = https://gitlab.com/libeigen/eigen
+[submodule "ext/bulk"]
+	path = ext/bulk
+	url = https://www.github.com/jwbuurlage/bulk
