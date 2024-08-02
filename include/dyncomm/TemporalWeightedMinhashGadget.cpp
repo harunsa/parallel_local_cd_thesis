@@ -191,36 +191,68 @@ map<double, set<TemporalNode>> TemporalWeightedMinhashGadget::performHashing(Adj
                             ++var17;
                         } while (wMap.empty());
 
-                        string sig="";
+                        string sig;
+                        string mhglob;
+
+                        auto r2 = this->r;
+                        auto c2 = this->c;
+                        auto beta2 = this->beta;
 
                         for (int j = 0; j < this->rows; ++j) {//hash node neighborhood row times
 
-                            double minA = std::numeric_limits<double>::infinity();
-                            string mh;
-                            double maxW = std::numeric_limits<double>::min();
-                            auto var27 = wMap.begin();
 
-                            while (var27 != wMap.end()) {//goes through individual Nodes
+                            bulk::thread::environment env;
 
-                                int64_t k = var27->first;
-                                double w = var27->second;
-                                if (!isnan(w)) {//check
-                                    if (w > maxW) {
-                                        maxW = w;
-                                    }
-                                    int t = (int)floor(log(w) / this->r[i](j, k) + this->beta[i](j, k));
-                                    double y = exp(this->r[i](j, k) * ((double) t - this->beta[i](j, k)));
-                                    double a = this->c[i](j, k) / (y * exp(this->r[i](j, k)));
-                                    if (a < minA) {
-                                        minA = a;
-                                        string pad1 = pad((long)k, digits);
-                                        string pad2 = turnHex(t);
-                                        mh = pad1 + pad2;
+                            env.spawn(4, [&mhglob,wMap,r2,beta2,c2,i,j,digits](
+                                    bulk::world &world) {
+
+                                int s = world.rank();
+                                int p = world.active_processors();
+                                string mh;
+
+                                double maxW = std::numeric_limits<double>::min();
+                                double minA = std::numeric_limits<double>::infinity();
+                                auto numbers = bulk::queue<uint64_t, double>(world);
+
+                                if (s == 0) {
+                                    for (auto [k, w]: wMap) {
+                                        numbers(std::hash<int>{}(k)%p).send(k, w);
                                     }
                                 }
-                                ++var27;
-                            }
-                            sig = sig.append(mh);
+
+                                world.sync();
+
+                                for (auto [k, w]: numbers) {
+
+                                    if (!isnan(w)) {
+                                        if (w > maxW) {
+                                            maxW = w;
+                                        }
+                                        int t = (int) floor(log(w) / r2[i](j, k) + beta2[i](j, k));
+                                        double y = exp(r2[i](j, k) * ((double) t - beta2[i](j, k)));
+                                        double a = c2[i](j, k) / (y * exp(r2[i](j, k)));
+                                        if (a < minA) {
+                                            minA = a;
+                                            string pad1 = pad((long) k, digits);
+                                            string pad2 = turnHex(t);
+                                            mh = pad1 + pad2;
+                                        }
+                                    }
+                                }
+                                //cout<<mh<<endl;
+                                auto report = bulk::queue<double,string>(world);
+                                report(0).send(minA,mh);
+                                world.sync();
+
+                                map<double,string> temp = {};
+                                for (const auto&[a,string]:report) {
+                                    temp.insert({a,string});
+                                }
+                                mh = temp.begin()->second;
+                                mhglob = mh;
+                            });
+                            cout<<sig<<endl;
+                            sig = sig.append(mhglob);
                         }
 
                         long timeHash = 0L;
