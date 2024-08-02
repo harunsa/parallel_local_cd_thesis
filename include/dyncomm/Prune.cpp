@@ -128,7 +128,7 @@ void Prune::preaggregate() {
         world.sync();
     });
 
-    env.spawn(2, [&start, &end, &totalTime1, &tGraph, &maxNode2, &wholeSpan2, &aggregations2](bulk::world &world) {
+    env.spawn(1, [&start, &end, &totalTime1, &tGraph, &maxNode2, &wholeSpan2, &aggregations2](bulk::world &world) {//2
         int s = world.rank();
         int p = world.active_processors();
         int size = 0;

@@ -3,6 +3,9 @@
 #include <cmath>
 #include <fstream>
 #include <cinttypes>
+#include <bulk/bulk.hpp>
+#include <bulk/backends/thread/thread.hpp>
+
 
 typedef libcuckoo::cuckoohash_map<uint64_t, std::vector<std::pair<uint64_t,double>>> Edge;
 typedef libcuckoo::cuckoohash_map<uint64_t, Edge> NestedMap;
@@ -847,12 +850,44 @@ map<double,int>AdjListWeight::standardRWR(const map<int,double>& sources, double
                             double w;
 
                             /** iterate through timespan of NNeighborhood and SUM Nodeweights -> Mass (1,10) + (1,11) till t2  */
-                            auto list = this->edges.find(t).find(from);
-                            for(auto var24 = list.begin();var24!=list.end();score +=w) {
-                                auto temp3 = *var24;
-                                w = temp3.second;
-                                ++var24;
-                            }
+
+                            bulk::thread::environment env;
+                            auto list2 = this->edges.find(t).find(from);
+                            env.spawn(3, [&list2,&score](bulk::world &world) {
+
+                                int s = world.rank();
+                                int p = world.active_processors();
+
+                                auto numbers = bulk::queue<double>(world);
+
+                                if (s == 0) {
+                                    for (auto w: list2) {
+                                        numbers(std::hash<int>{}(w.first)%p).send(w.second);
+                                    }
+                                }
+                                world.sync();
+                                for (auto  w: numbers) {
+                                    score +=w;
+                                }
+                                auto report = bulk::queue<double>(world);
+                                report(0).send(score);
+
+                                for(auto sc:report){
+                                    score+=sc;
+                                }
+
+                            });
+
+
+//                            auto list = this->edges.find(t).find(from);
+//
+//                            for(auto var24 = list.begin();var24!=list.end();score +=w) {
+//                                auto temp3 = *var24;
+//                                w = temp3.second;
+//                                ++var24;
+//                            }
+
+
                             ++t;
                         }
                     }

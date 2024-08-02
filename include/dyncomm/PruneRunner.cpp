@@ -51,7 +51,7 @@ void PruneRunner::precompute(Prune& p, MatrixXd& bounds, bool printEigs) {
     bounds.resize(p.endTime+1,p.endTime+1);
     //initialize all elements to 0
     bounds.setZero();
-    //cout<<bounds.rows()<<","<<bounds.cols()<<endl;
+    cout<<bounds.rows()<<","<<bounds.cols()<<endl;
 
     //1.(0,10)
     bounds(p.startTime,p.endTime-p.startTime) = Prune::normalizeConductance(lowerBound, p.endTime - p.startTime + 1);
@@ -60,7 +60,7 @@ void PruneRunner::precompute(Prune& p, MatrixXd& bounds, bool printEigs) {
     int64_t size = 0;
 
     bulk::thread::environment env;
-    env.spawn(14, [&p, &bounds](bulk::world &world) {
+    env.spawn(2, [&p, &bounds](bulk::world &world) {
         int s = world.rank();
         int ap = world.active_processors();
         int size = 0;
@@ -78,8 +78,8 @@ void PruneRunner::precompute(Prune& p, MatrixXd& bounds, bool printEigs) {
 
             //fill initial column 0 with bounds of (i,i)
             bounds(time, 0) = Prune::normalizeConductance(lowerBound, 1); //(1,0) (2,0) (3,0)
-            // cout<<bounds.rows()<<","<<bounds.cols()<<endl;
-           // cout << time << "," << 0 << " normCond:" << bounds(time, 0) << " of boundInterval " << time << "," << time<< endl;
+             cout<<bounds.rows()<<","<<bounds.cols()<<endl;
+             cout << time << "," << 0 << " normCond:" << bounds(time, 0) << " of boundInterval " << time << "," << time<< endl;
 
         }
         world.sync();
@@ -89,7 +89,7 @@ void PruneRunner::precompute(Prune& p, MatrixXd& bounds, bool printEigs) {
     auto var11 = PREC_SIZES;
     int64_t var10 = var11.size();
 
-    env.spawn(14, [&var10, &var11, &p, &bounds](bulk::world &world) {
+    env.spawn(2, [&var10, &var11, &p, &bounds](bulk::world &world) {
         int s = world.rank();
         int ap = world.active_processors();
         int size = 0;
@@ -114,8 +114,8 @@ void PruneRunner::precompute(Prune& p, MatrixXd& bounds, bool printEigs) {
                     //fills cols col number dictates scale/PREC_SIZE
                     bounds(t, time - 1) = Prune::normalizeConductance(lowerBound, time);
                     //cout << t <<","<<size-1 <<endl;
-//                    cout << t << "," << time - 1 << " normCond:" << bounds(t, time - 1) << " of boundInterval " << t
-//                         << "," << end << endl;
+                   cout << t << "," << time - 1 << " normCond:" << bounds(t, time - 1) << " of boundInterval " << t
+                         << "," << end << endl;
                 }
             }
 

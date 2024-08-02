@@ -203,7 +203,7 @@ map<double, set<TemporalNode>> TemporalWeightedMinhashGadget::performHashing(Adj
 
                             bulk::thread::environment env;
 
-                            env.spawn(4, [&mhglob,wMap,r2,beta2,c2,i,j,digits](
+                            env.spawn(1, [&mhglob,wMap,r2,beta2,c2,i,j,digits](
                                     bulk::world &world) {
 
                                 int s = world.rank();

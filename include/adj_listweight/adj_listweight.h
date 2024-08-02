@@ -9,6 +9,7 @@
 #include "../libcuckoo/libcuckoo/cuckoohash_map.hh"
 #include "../dyncomm/TemporalNode.cpp"
 
+
 typedef libcuckoo::cuckoohash_map<uint64_t, libcuckoo::cuckoohash_map<uint64_t, std::vector<std::pair<uint64_t,double>>>> NestedMapWeight;
 typedef libcuckoo::cuckoohash_map<uint64_t, libcuckoo::cuckoohash_map<uint64_t, double>> NodeMap;
 
